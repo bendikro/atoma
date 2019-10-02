@@ -23,6 +23,7 @@ def test_specification():
         pub_date=datetime(2003, 6, 3, 9, 39, 21, tzinfo=tzutc()),
         source=None,
         torrent=None,
+        torrent_item=None,
         content_encoded=None
     )
     item_2 = RSSItem(
@@ -41,6 +42,7 @@ def test_specification():
         pub_date=datetime(2003, 5, 30, 11, 6, 42, tzinfo=tzutc()),
         source=None,
         torrent=None,
+        torrent_item=None,
         content_encoded=None
     )
     item_3 = RSSItem(
@@ -58,6 +60,7 @@ def test_specification():
         pub_date=datetime(2003, 5, 27, 8, 37, 32, tzinfo=tzutc()),
         source=None,
         torrent=None,
+        torrent_item=None,
         content_encoded=None
     )
     item_4 = RSSItem(
@@ -75,6 +78,7 @@ def test_specification():
         pub_date=datetime(2003, 5, 20, 8, 56, 2, tzinfo=tzutc()),
         source=None,
         torrent=None,
+        torrent_item=None,
         content_encoded=None
     )
 

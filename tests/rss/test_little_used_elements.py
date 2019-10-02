@@ -29,6 +29,7 @@ def test_little_used_elements():
             url='http://la.example.com/rss.xml'
         ),
         torrent=None,
+        torrent_item=None,
         content_encoded='<p>What a <em>beautiful</em> day!</p>'
     )
     expected = RSSChannel(

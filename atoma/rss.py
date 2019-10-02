@@ -45,6 +45,26 @@ class RSSTorrent:
 
 
 @attr.s
+class RSSTorrentItemElem:
+    title: str = attr.ib()
+    value: Optional[str] = attr.ib(default=None)
+
+
+@attr.s
+class RSSTorrentItem:
+    infohash: Optional[RSSTorrentItemElem] = attr.ib()
+    comments: Optional[RSSTorrentItemElem] = attr.ib()
+    infostat: Optional[RSSTorrentItemElem] = attr.ib()
+    download: Optional[RSSTorrentItemElem] = attr.ib()
+    size: Optional[RSSTorrentItemElem] = attr.ib()
+    files: Optional[RSSTorrentItemElem] = attr.ib()
+    seeders: Optional[RSSTorrentItemElem] = attr.ib()
+    leechers: Optional[RSSTorrentItemElem] = attr.ib()
+    completed: Optional[RSSTorrentItemElem] = attr.ib()
+    infolink: Optional[RSSTorrentItemElem] = attr.ib()
+
+
+@attr.s
 class RSSItem:
     title: Optional[str] = attr.ib()
     link: Optional[str] = attr.ib()
@@ -59,6 +79,7 @@ class RSSItem:
 
     # Extension
     torrent: Optional[RSSTorrent] = attr.ib()
+    torrent_item: Optional[RSSTorrentItem] = attr.ib()
     content_encoded: Optional[str] = attr.ib()
 
 
@@ -145,26 +166,50 @@ def _get_torrent_element(element: Element,
     (stored in tests/data/feeds/xmlns.ezrss.it_0.1.dtd)
     """
     # Check if there is a torrent item (<torrent xmlns="...">)
-    torrent_elem = get_child(element, 'xmlns:torrent', optional)
+    torrent_elem = get_child(element, 'ezrss:torrent', optional)
 
     # No torrent item, so try to get the fields names on the form <torrent:contentLength>
     # from the item element directly
     if torrent_elem is None:
         torrent_elem = element
 
+    attr_names = ['fileName', 'contentLength', 'infoHash', 'magnetURI']
     params = []
-    for name in ['fileName', 'contentLength', 'infoHash', 'magnetURI']:
+    for name in attr_names:
         value = None
-        elem = get_child(torrent_elem, 'xmlns:{}'.format(name))
+        elem = get_child(torrent_elem, 'ezrss:{}'.format(name))
         if elem is not None:
             value = elem.text
         params.append(value)
 
     # None of the attributes found
-    if params.count(None):
+    if params.count(None) == len(attr_names):
         return None
 
     return RSSTorrent(*params)
+
+def _get_torrent_item(element: Element,
+                optional: bool=True) -> Optional[RSSTorrentItem]:
+    """
+    Parse values from torrent item as defined by namespace declaration
+    xmlns:torrentItem="http://xbnbt.sourceforge.net/ns/torrentItem#"
+
+    """
+    attr_names = ['infohash', 'comments', 'infostat', 'download', 'size',
+                  'files', 'seeders', 'leechers', 'completed', 'infolink']
+    params = []
+    for name in attr_names:
+        item = None
+        elem = get_child(element, 'torrentItem:{}'.format(name))
+        if elem is not None:
+            item = RSSTorrentItemElem(elem.attrib.get("title"), elem.text)
+        params.append(item)
+
+    # None of the attributes found
+    if params.count(None) == len(attr_names):
+        return None
+
+    return RSSTorrentItem(*params)
 
 
 def _get_item(element: Element) -> RSSItem:
@@ -180,6 +225,7 @@ def _get_item(element: Element) -> RSSItem:
     pub_date = get_datetime(root, 'pubDate')
     source = _get_source(root, 'source')
     torrent = _get_torrent_element(root)
+    torrent_item = _get_torrent_item(root)
     content_encoded = get_text(root, 'content:encoded')
     return RSSItem(
         title,
@@ -193,6 +239,7 @@ def _get_item(element: Element) -> RSSItem:
         pub_date,
         source,
         torrent,
+        torrent_item,
         content_encoded,
     )
 
