@@ -28,6 +28,7 @@ def test_little_used_elements():
             title='Los Angeles Herald-Examiner',
             url='http://la.example.com/rss.xml'
         ),
+        torrent=None,
         content_encoded='<p>What a <em>beautiful</em> day!</p>'
     )
     expected = RSSChannel(
@@ -52,6 +53,7 @@ def test_little_used_elements():
             height=32,
             description='Read the Dallas Times-Herald'
         ),
+        version='2.0',
         items=[item],
         content_encoded=None
     )

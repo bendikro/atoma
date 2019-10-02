@@ -10,6 +10,8 @@ from .utils import (
     try_parse_length
 )
 
+supported_rss_versions = ['2.0']
+
 
 @attr.s
 class RSSImage:
@@ -35,6 +37,14 @@ class RSSSource:
 
 
 @attr.s
+class RSSTorrent:
+    filename: Optional[str] = attr.ib()
+    contentlength: Optional[str] = attr.ib()
+    infohash: Optional[str] = attr.ib()
+    magneturi: Optional[str] = attr.ib()
+
+
+@attr.s
 class RSSItem:
     title: Optional[str] = attr.ib()
     link: Optional[str] = attr.ib()
@@ -48,6 +58,7 @@ class RSSItem:
     source: Optional[RSSSource] = attr.ib()
 
     # Extension
+    torrent: Optional[RSSTorrent] = attr.ib()
     content_encoded: Optional[str] = attr.ib()
 
 
@@ -67,6 +78,7 @@ class RSSChannel:
     docs: Optional[str] = attr.ib()
     ttl: Optional[int] = attr.ib()
     image: Optional[RSSImage] = attr.ib()
+    version: Optional[str] = attr.ib()
 
     items: List[RSSItem] = attr.ib()
 
@@ -126,9 +138,37 @@ def _get_link(element: Element) -> Optional[str]:
     return None
 
 
+def _get_torrent_element(element: Element,
+                optional: bool=True) -> Optional[RSSTorrent]:
+    """
+    Parse values from torrent item as defined by http://xmlns.ezrss.it/0.1/
+    (stored in tests/data/feeds/xmlns.ezrss.it_0.1.dtd)
+    """
+    # Check if there is a torrent item (<torrent xmlns="...">)
+    torrent_elem = get_child(element, 'xmlns:torrent', optional)
+
+    # No torrent item, so try to get the fields names on the form <torrent:contentLength>
+    # from the item element directly
+    if torrent_elem is None:
+        torrent_elem = element
+
+    params = []
+    for name in ['fileName', 'contentLength', 'infoHash', 'magnetURI']:
+        value = None
+        elem = get_child(torrent_elem, 'xmlns:{}'.format(name))
+        if elem is not None:
+            value = elem.text
+        params.append(value)
+
+    # None of the attributes found
+    if params.count(None):
+        return None
+
+    return RSSTorrent(*params)
+
+
 def _get_item(element: Element) -> RSSItem:
     root = element
-
     title = get_text(root, 'title')
     link = _get_link(root)
     description = get_text(root, 'description')
@@ -139,9 +179,8 @@ def _get_item(element: Element) -> RSSItem:
     guid = get_text(root, 'guid')
     pub_date = get_datetime(root, 'pubDate')
     source = _get_source(root, 'source')
-
+    torrent = _get_torrent_element(root)
     content_encoded = get_text(root, 'content:encoded')
-
     return RSSItem(
         title,
         link,
@@ -153,13 +192,14 @@ def _get_item(element: Element) -> RSSItem:
         guid,
         pub_date,
         source,
-        content_encoded
+        torrent,
+        content_encoded,
     )
 
 
 def _parse_rss(root: Element) -> RSSChannel:
     rss_version = root.get('version')
-    if rss_version != '2.0':
+    if supported_rss_versions and rss_version not in supported_rss_versions:
         raise FeedParseError('Cannot process RSS feed version "{}"'
                              .format(rss_version))
 
@@ -201,6 +241,7 @@ def _parse_rss(root: Element) -> RSSChannel:
         docs,
         ttl,
         image,
+        rss_version,
         items,
         content_encoded
     )

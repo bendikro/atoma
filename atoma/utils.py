@@ -10,7 +10,8 @@ from .exceptions import FeedXMLError, FeedParseError
 
 ns = {
     'content': 'http://purl.org/rss/1.0/modules/content/',
-    'feed': 'http://www.w3.org/2005/Atom'
+    'feed': 'http://www.w3.org/2005/Atom',
+    'xmlns': 'http://xmlns.ezrss.it/0.1/'
 }
 
 # Common timezone abbreviations defined in RFC 822, used by RSS
